@@ -19,12 +19,16 @@
 
     <div class="box">
         <h1>ADD TO LIST</h1>
-        <% for(var i of newItems){ %>
+        <form action="/delete" method="post">
+        <% items.forEach(item=>{%>
             <div class="item">
-                <input type="checkbox">
-                <p> <%= i %> </p>
+                <input type="checkbox" name='checkbox' value="<%= item._id %>" onchange="this.form.submit()">
+                <p> <%= item.list %> </p>
             </div>
-            <% } %>
+         <% }) %>
+        </form>
+            
+       
 
    
 

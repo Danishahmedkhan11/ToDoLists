@@ -1,55 +1,87 @@
-const express= require('express')
-const bodyParser= require('body-parser')
-const app= express();
-app.set('view engine','ejs');
-app.use(bodyParser.urlencoded({ extended:true }))
-app.use(express.static('public'));
-var items=["Ice-cream",'pani-patase'];
+const express = require("express");
+const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+const app = express();
+app.set("view engine", "ejs");
 
-app.get('/', function(req,res){
-    var date=new Date();
-    // var currentDay=date;
-    // var day=""
-    // var title=""
-    var options={
-        day:"numeric",
-        month:"long",
-        year:"numeric",
-        weekday:"long",
-    };
- 
-    var excatDate=date.toLocaleDateString('en-US',options);
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static("public"));
 
-    // if(currentDay===6 || currentDay === 0)
-    // {   title="I know you happy";
-    //     day="It is weekend. I guess you sleep well 🥱 "
-    // }
-    // else
-    // {   title="I know you are in great pain";
-    //     day="It is weekday. I guess you should go to work.😎 ";
-    // }
-    res.render('list',{
-        newItems:items,
-        todayDate:excatDate})
+mongoose.set("strictQuery", false);
+
+
+//checking connection to database or not 
+mongoose.connect("mongodb+srv://Danish:root@cluster0.1bmpq.mongodb.net/ToList", (err) => {
+  if (err){
+    console.log(err);
+  }
+  else console.log("Successfully connected DB");
+});
+
+
+// creating schema for data
+const listSchema = mongoose.Schema({
+  list: String,
+});
+const listModel = mongoose.model("Lists", listSchema);
+
+
+//Displaying the list of items and the items are coming from collection in database
+app.get("/", function (req, res) {
+  var date = new Date();
+  var options = {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    weekday: "long",
+  };
+  var dates = date.toLocaleDateString("en-US", options);
+
+  listModel.find((err, data) => {
+    if (err) {
+      console.log(err);
+    } else {
+      res.render("list", {
+        items: data,
+        todayDate: dates,
+      });
+    }
+  });
+});
+
+
+
+//creating items and saved them to collection in database
+app.post("/", function (req, res) {
+  var item = req.body.item;
+
+  const list = new listModel({
+    list: item,
+  });
+
+  list
+    .save()
+    .then(console.log("Successfully saved"))
+    .catch((err) => {
+      console.log("Not saved"+err);
+    });
+
+  res.redirect("/");
+});
+
+
+
+app.post('/delete', function(req, res) {
+    console.log(req.body.checkbox);
+    listModel.findByIdAndDelete({'_id':req.body.checkbox}, function(err){
+        if(err) console.log(err);
+        else console.log('Delete successfully');
+    });
+    res.redirect('/');
 
 })
 
- app.post('/', function(req, res){
-    var itm=req.body.item;
-    var del=req.body.delete;
-
-
-    console.log(itm);
-    items.push(itm);
-    console.log(items)
-   
-    // const arr=[]
-    // arr.push(item)
-    // res.render('list', {newItem:item});
-    res.redirect('/');
-
- })
-
-app.listen(8080,function(){
-    console.log("Listen on the port");
+//Executing localhost
+app.listen(process.env.PROT || 8080, function () {
+  console.log("Listen on the port 8080");
 });
